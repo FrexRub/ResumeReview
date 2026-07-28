@@ -1,0 +1,26 @@
+[project]
+name = "resumereview"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Станислав Рубцов",email = "frexrub@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.140.7,<0.141.0)",
+    "pydantic (>=2.13.4,<3.0.0)",
+    "pydantic-settings (>=2.14.2,<3.0.0)",
+    "bcrypt (>=5.0.0,<6.0.0)",
+    "jwt (>=1.4.0,<2.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)",
+    "sqlalchemy[asyncio] (>=2.0.51,<3.0.0)",
+    "alembic (>=1.18.5,<2.0.0)",
+    "redis (>=8.0.1,<9.0.0)",
+    "aiocache[redis] (>=0.12.3,<0.13.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
