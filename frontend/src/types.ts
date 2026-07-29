@@ -21,3 +21,9 @@ export interface ParsedVacancy {
   text: string;
   warnings: string[];
 }
+
+export interface StoredVacancy {
+  id: number;
+  created_at: string;
+  is_active: boolean;
+}

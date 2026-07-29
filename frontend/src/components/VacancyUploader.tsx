@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 
-import { ApiError, parseVacancy } from "../api/client";
+import { ApiError, parseVacancy, saveVacancy } from "../api/client";
 import type { ParsedVacancy } from "../types";
 import { DocumentIcon, UploadIcon } from "./Icons";
 import styles from "./VacancyUploader.module.css";
@@ -29,6 +29,9 @@ export function VacancyUploader() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   function chooseFile(nextFile?: File) {
     if (!nextFile) return;
@@ -36,6 +39,8 @@ export function VacancyUploader() {
     setError(validationError ?? "");
     setFile(validationError ? null : nextFile);
     setResult(null);
+    setSaved(false);
+    setSaveError("");
   }
 
   function handleInput(event: ChangeEvent<HTMLInputElement>) {
@@ -53,12 +58,32 @@ export function VacancyUploader() {
     if (!file) return;
     setLoading(true);
     setError("");
+    setSaved(false);
+    setSaveError("");
     try {
       setResult(await parseVacancy(file));
     } catch (reason) {
       setError(reason instanceof ApiError ? reason.message : "Не удалось обработать файл");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!result?.text.trim() || saving || saved) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveVacancy(result.text);
+      setSaved(true);
+    } catch (reason) {
+      setSaveError(
+        reason instanceof ApiError
+          ? reason.message
+          : "Не удалось добавить вакансию в подбор кандидатов",
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -122,6 +147,27 @@ export function VacancyUploader() {
           )}
           <div className={styles.textHeading}><span>Извлеченный текст</span><span>Готово</span></div>
           <pre className={styles.textPreview}>{result.text}</pre>
+          <div className={styles.saveArea}>
+            <button
+              className={styles.saveButton}
+              type="button"
+              onClick={handleSave}
+              disabled={!result.text.trim() || saving || saved}
+            >
+              {saving
+                ? "Добавляем в подбор…"
+                : saved
+                  ? "Добавлено в подбор кандидатов"
+                  : "Добавить в подбор кандидатов"}
+            </button>
+            <div
+              className={saveError ? styles.saveError : styles.saveStatus}
+              role={saveError ? "alert" : "status"}
+              aria-live="polite"
+            >
+              {saveError || (saved ? "Текст вакансии сохранён и готов к подбору кандидатов." : "")}
+            </div>
+          </div>
         </div>
       )}
     </section>

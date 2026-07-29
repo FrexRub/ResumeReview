@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ParsedVacancy(BaseModel):
@@ -9,3 +11,22 @@ class ParsedVacancy(BaseModel):
     characters: int = Field(ge=0)
     text: str
     warnings: list[str] = Field(default_factory=list)
+
+
+class VacancyCreate(BaseModel):
+    content: str = Field(min_length=1)
+
+    @field_validator("content")
+    @classmethod
+    def content_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Текст вакансии не должен быть пустым")
+        return value
+
+
+class VacancyCreated(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    is_active: bool

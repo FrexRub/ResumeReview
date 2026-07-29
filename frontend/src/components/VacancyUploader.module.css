@@ -32,5 +32,14 @@
 .textHeading { display: flex; justify-content: space-between; margin: 24px 0 10px; }
 .textHeading span:last-child { color: var(--blue); }
 .textPreview { max-height: 330px; margin: 0; padding: 18px; overflow: auto; border: 1px solid var(--line); background: white; color: var(--ink-soft); font: 400 0.84rem/1.7 var(--font-body); white-space: pre-wrap; }
+.saveArea { display: grid; gap: 8px; margin-top: 14px; }
+.saveButton { width: 100%; min-height: 52px; padding: 0 20px; border: 1px solid var(--blue); background: var(--blue); color: white; font: 700 0.86rem var(--font-body); cursor: pointer; transition: color 180ms ease, background 180ms ease, border-color 180ms ease; }
+.saveButton:hover:not(:disabled) { border-color: var(--ink); background: var(--ink); }
+.saveButton:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 28%, transparent); outline-offset: 3px; }
+.saveButton:disabled { cursor: not-allowed; opacity: 0.58; }
+.saveStatus, .saveError { min-height: 20px; font-size: 0.78rem; line-height: 1.5; }
+.saveStatus { color: var(--blue); }
+.saveError { color: var(--danger); }
 @keyframes reveal { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .result { animation: none; } }
 @media (max-width: 560px) { .resultTop { grid-template-columns: 1fr 1fr; } .resultTop div:first-child { grid-column: 1 / -1; } }

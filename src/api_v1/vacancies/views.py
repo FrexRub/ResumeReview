@@ -3,10 +3,16 @@ from pathlib import Path
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api_v1.vacancies.schemas import ParsedVacancy
-from src.api_v1.vacancies.service import get_parserdoc_client
+from src.api_v1.vacancies.schemas import ParsedVacancy, VacancyCreate, VacancyCreated
+from src.api_v1.vacancies.service import (
+    VacancyStorageUnavailable,
+    get_parserdoc_client,
+    save_vacancy,
+)
 from src.core.config import setting
+from src.core.database import get_async_session
 from src.core.depends import current_user_authorization
 from src.models.user import User
 
@@ -26,6 +32,22 @@ SUPPORTED_EXTENSIONS = {
     ".xml",
 }
 CHUNK_SIZE = 1024 * 1024
+
+
+@router.post("", response_model=VacancyCreated, status_code=status.HTTP_201_CREATED)
+async def create_vacancy(
+    data: VacancyCreate,
+    _: User = Depends(current_user_authorization),
+    session: AsyncSession = Depends(get_async_session),
+) -> VacancyCreated:
+    try:
+        vacancy = await save_vacancy(session, data.content)
+    except VacancyStorageUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Не удалось сохранить вакансию. Попробуйте ещё раз",
+        ) from exc
+    return VacancyCreated.model_validate(vacancy)
 
 
 async def _read_limited(file: UploadFile) -> bytes:

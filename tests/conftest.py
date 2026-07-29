@@ -32,11 +32,28 @@ class FakeRedis:
 
 
 class FakeSession:
-    async def commit(self) -> None:
-        pass
+    def __init__(self) -> None:
+        self.added: list[object] = []
+        self.committed = False
+        self.rolled_back = False
 
-    async def refresh(self, _: object) -> None:
-        pass
+    def add(self, entity: object) -> None:
+        self.added.append(entity)
+
+    async def flush(self) -> None:
+        entity = self.added[-1]
+        if getattr(entity, "id", None) is None:
+            setattr(entity, "id", len(self.added))
+
+    async def commit(self) -> None:
+        self.committed = True
+
+    async def refresh(self, entity: object) -> None:
+        if getattr(entity, "created_at", None) is None:
+            setattr(entity, "created_at", datetime.now(timezone.utc))
+
+    async def rollback(self) -> None:
+        self.rolled_back = True
 
 
 @pytest.fixture(autouse=True)

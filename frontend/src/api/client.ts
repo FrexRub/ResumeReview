@@ -1,4 +1,4 @@
-import type { AuthResponse, ParsedVacancy } from "../types";
+import type { AuthResponse, ParsedVacancy, StoredVacancy } from "../types";
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 let accessToken: string | null = null;
@@ -116,4 +116,11 @@ export function parseVacancy(file: File): Promise<ParsedVacancy> {
   const formData = new FormData();
   formData.append("file", file);
   return request<ParsedVacancy>("/api/vacancies/parse", { method: "POST", body: formData });
+}
+
+export function saveVacancy(content: string): Promise<StoredVacancy> {
+  return request<StoredVacancy>("/api/vacancies", {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
 }
