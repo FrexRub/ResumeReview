@@ -3,54 +3,33 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 
 from src.api_v1 import router as api_router
 from src.core.config import configure_logging, setting
 
-description = """
-    API resume review
-
-    You will be able to:
-
-    * **Read users**
-    * **Create/Update/Remove users**
-    * **Load file**
-"""
-
+configure_logging(logging.INFO)
 
 app = FastAPI(
     title="API_ResumeReview",
-    description=description,
+    description="API для авторизации и разбора документов с вакансиями",
     version="0.1.0",
     docs_url="/docs",
 )
 
-origins = [
-    "http://localhost",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1",
-    "https://airportcards.ru",
-    "https://www.airportcards.ru",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    # allow_origins=origins,
+    allow_origins=setting.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+app.include_router(api_router)
 
-app.add_middleware(SessionMiddleware, secret_key=setting.secret_key.get_secret_value())
 
-app.include_router(router=api_router)
-
-configure_logging(logging.INFO)
-logger = logging.getLogger(__name__)
+@app.get("/health", tags=["Health"])
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    uvicorn.run("src.main:app", reload=True)

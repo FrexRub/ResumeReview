@@ -1,0 +1,36 @@
+.card { min-width: 0; padding: clamp(24px, 3vw, 38px); border: 1px solid var(--line-strong); background: var(--paper-card); }
+.cardHeading { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 30px; }
+.index { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--blue); color: var(--blue); font-size: 0.72rem; font-weight: 700; }
+.eyebrow { margin: 0 0 4px; color: var(--muted-light); font-size: 0.67rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
+.cardHeading h2 { margin: 0; font-family: var(--font-display); font-size: clamp(1.65rem, 2.5vw, 2.3rem); font-weight: 500; letter-spacing: -0.03em; }
+.cardHeading > svg { color: var(--blue); }
+.dropzone { display: grid; min-height: 255px; place-items: center; align-content: center; padding: 28px; border: 1px dashed var(--line-strong); background: var(--paper); text-align: center; transition: border-color 180ms ease, background 180ms ease; }
+.dropzone.dragging { border-color: var(--blue); background: var(--blue-wash); }
+.dropzone > svg { margin-bottom: 12px; color: var(--blue); }
+.dropzone p { margin: 0 0 18px; color: var(--muted); line-height: 1.6; }
+.dropzone p strong { color: var(--ink); }
+.fileButton { min-height: 44px; padding: 0 18px; border: 1px solid var(--ink); background: transparent; color: var(--ink); font: 700 0.82rem var(--font-body); cursor: pointer; transition: color 180ms ease, border-color 180ms ease, background 180ms ease; }
+.fileButton:hover { border-color: var(--blue); background: var(--blue); color: white; }
+.formats { margin-top: 18px; color: var(--muted-light); font-size: 0.68rem; line-height: 1.5; }
+.hiddenInput { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.selected { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 16px; padding: 14px 16px; border: 1px solid var(--line); background: white; }
+.selected > svg { color: var(--blue); }
+.selected div { display: grid; min-width: 0; gap: 3px; }
+.selected strong { overflow: hidden; font-size: 0.84rem; text-overflow: ellipsis; white-space: nowrap; }
+.selected span { color: var(--muted-light); font-size: 0.72rem; }
+.selected button { border: 0; background: transparent; color: var(--muted); font: 700 0.72rem var(--font-body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.message { min-height: 40px; padding-top: 10px; color: var(--danger); font-size: 0.83rem; }
+.parseButton { width: 100%; min-height: 52px; border: 1px solid var(--ink); background: var(--ink); color: white; font: 700 0.86rem var(--font-body); cursor: pointer; transition: background 180ms ease, border-color 180ms ease; }
+.parseButton:hover:not(:disabled) { border-color: var(--blue); background: var(--blue); }
+.parseButton:disabled { cursor: not-allowed; opacity: 0.38; }
+.result { margin-top: 26px; border-top: 1px solid var(--line-strong); padding-top: 22px; animation: reveal 360ms ease both; }
+.resultTop { display: grid; grid-template-columns: 1.5fr 0.7fr 0.7fr; gap: 16px; }
+.resultTop div { display: grid; gap: 5px; min-width: 0; }
+.resultTop span, .textHeading { color: var(--muted-light); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.resultTop strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.84rem; }
+.warnings { margin-top: 18px; padding: 12px; background: #fff5d9; color: #795b00; font-size: 0.78rem; line-height: 1.5; }
+.textHeading { display: flex; justify-content: space-between; margin: 24px 0 10px; }
+.textHeading span:last-child { color: var(--blue); }
+.textPreview { max-height: 330px; margin: 0; padding: 18px; overflow: auto; border: 1px solid var(--line); background: white; color: var(--ink-soft); font: 400 0.84rem/1.7 var(--font-body); white-space: pre-wrap; }
+@keyframes reveal { from { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 560px) { .resultTop { grid-template-columns: 1fr 1fr; } .resultTop div:first-child { grid-column: 1 / -1; } }

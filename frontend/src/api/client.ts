@@ -1,0 +1,119 @@
+import type { AuthResponse, ParsedVacancy } from "../types";
+
+const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+let accessToken: string | null = null;
+let refreshPromise: Promise<AuthResponse> | null = null;
+let onSessionExpired: (() => void) | null = null;
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+function readError(payload: unknown): string {
+  if (payload && typeof payload === "object" && "detail" in payload) {
+    const detail = (payload as { detail: unknown }).detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail) && detail[0] && typeof detail[0] === "object") {
+      const message = (detail[0] as { msg?: unknown }).msg;
+      if (typeof message === "string") return message.replace(/^Value error, /, "");
+    }
+  }
+  return "Не удалось выполнить запрос";
+}
+
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T;
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new ApiError(readError(payload), response.status);
+  return payload as T;
+}
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+
+export function setSessionExpiredHandler(handler: (() => void) | null): void {
+  onSessionExpired = handler;
+}
+
+export function refreshSession(): Promise<AuthResponse> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(parseResponse<AuthResponse>)
+      .then((session) => {
+        setAccessToken(session.access_token);
+        return session;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+async function request<T>(path: string, init: RequestInit = {}, canRetry = true): Promise<T> {
+  const headers = new Headers(init.headers);
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
+
+  if (response.status === 401 && canRetry && !path.startsWith("/api/auth/")) {
+    try {
+      await refreshSession();
+      return request<T>(path, init, false);
+    } catch {
+      setAccessToken(null);
+      onSessionExpired?.();
+      throw new ApiError("Сессия завершена. Войдите снова.", 401);
+    }
+  }
+  return parseResponse<T>(response);
+}
+
+export function login(username: string, password: string): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/api/auth/login",
+    { method: "POST", body: JSON.stringify({ username, password }) },
+    false,
+  ).then((session) => {
+    setAccessToken(session.access_token);
+    return session;
+  });
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await request<void>("/api/auth/logout", { method: "POST" }, false);
+  } finally {
+    setAccessToken(null);
+  }
+}
+
+export function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  return request<void>("/api/users/me/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+}
+
+export function parseVacancy(file: File): Promise<ParsedVacancy> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request<ParsedVacancy>("/api/vacancies/parse", { method: "POST", body: formData });
+}

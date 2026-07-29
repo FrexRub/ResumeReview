@@ -1,0 +1,31 @@
+:root {
+  --paper: #f1eee5;
+  --paper-card: #faf8f1;
+  --ink: #141d25;
+  --ink-soft: #26333e;
+  --muted: #58636c;
+  --muted-light: #7d858b;
+  --line: rgba(20, 29, 37, 0.14);
+  --line-strong: rgba(20, 29, 37, 0.28);
+  --blue: #2357d9;
+  --blue-deep: #173d9f;
+  --blue-wash: rgba(35, 87, 217, 0.06);
+  --danger: #a63228;
+  --font-display: "Newsreader", Georgia, serif;
+  --font-body: "Manrope", "Trebuchet MS", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font: 400 16px/1.5 var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--paper); }
+body { min-width: 320px; min-height: 100vh; margin: 0; background-image: radial-gradient(rgba(20, 29, 37, 0.07) 0.6px, transparent 0.6px); background-size: 8px 8px; }
+button, input { border-radius: 0; }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(35, 87, 217, 0.35); outline-offset: 3px; }
+::selection { background: rgba(35, 87, 217, 0.2); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

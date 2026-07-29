@@ -1,61 +1,54 @@
 import re
-from typing import Optional
+from datetime import datetime
+from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    EmailStr,
-    Field,
-    field_validator,
+from pydantic import BaseModel, Field, field_validator
+
+PASSWORD_PATTERN = re.compile(
+    r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!\"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]).{8,128}$"
+)
+PASSWORD_MESSAGE = (
+    "Пароль должен содержать минимум 8 символов, строчную и заглавную буквы, "
+    "цифру и специальный символ"
 )
 
-PATTERN_PASSWORD = (
-    r'^(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?[!"#\$%&\(\)\*\+,-\.\/:;<=>\?@[\]\^_'
-    r"`\{\|}~])[a-zA-Z0-9!\$%&\(\)\*\+,-\.\/:;<=>\?@[\]\^_`\{\|}~]{8,}$"
-)
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1, max_length=128)
 
 
-class UserBaseSchemas(BaseModel):
-    full_name: Optional[str]
-    email: EmailStr
-
-
-class UserUpdateSchemas(UserBaseSchemas):
-    pass
-
-
-class UserUpdatePartialSchemas(BaseModel):
-    full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-
-
-class UserCreateSchemas(BaseModel):
-    full_name: str = Field(alias="username")
-    email: EmailStr
-    hashed_password: str = Field(alias="password")
-
-    @field_validator("hashed_password")
-    def validate_password(cls, value: str) -> str:
-        if not re.match(PATTERN_PASSWORD, value):
-            raise ValueError("Пароль должен состоять из цифр, букв (с заглавной) и специальных символов")
-        return value
-
-
-class UserInfoSchemas(UserBaseSchemas):
-    id: str
-    is_active: bool
-    is_verified: bool
-
-
-class OutUserSchemas(BaseModel):
-    access_token: str
-    token_type: str
-    user: UserInfoSchemas
-
-
-class LoginSchemas(BaseModel):
+class UserInfo(BaseModel):
+    id: UUID
     username: str
-    password: str
+    is_active: bool
+    is_superuser: bool
+    registered_at: datetime
+
+    @classmethod
+    def from_user(cls, user: object) -> "UserInfo":
+        return cls(
+            id=getattr(user, "id"),
+            username=getattr(user, "name"),
+            is_active=getattr(user, "is_active"),
+            is_superuser=getattr(user, "is_superuser"),
+            registered_at=getattr(user, "registered_at"),
+        )
 
 
-class TokenSchemas(BaseModel):
+class AuthResponse(BaseModel):
     access_token: str
+    token_type: str = "bearer"
+    user: UserInfo
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        if not PASSWORD_PATTERN.match(value):
+            raise ValueError(PASSWORD_MESSAGE)
+        return value

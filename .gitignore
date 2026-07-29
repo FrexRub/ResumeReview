@@ -162,3 +162,9 @@ cython_debug/
 /.idea/
 /.idea/misc.xml
 /serts
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.env
+.playwright-cli/

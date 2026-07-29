@@ -1,0 +1,4 @@
+.loading { display: grid; min-height: 100vh; place-items: center; align-content: center; gap: 16px; color: var(--muted); }
+.loading span { display: grid; width: 52px; height: 52px; place-items: center; background: var(--blue); color: white; font-weight: 700; letter-spacing: 0.06em; animation: pulse 1.2s ease-in-out infinite alternate; }
+.loading p { margin: 0; font-size: 0.82rem; }
+@keyframes pulse { to { opacity: 0.62; transform: translateY(-3px); } }
