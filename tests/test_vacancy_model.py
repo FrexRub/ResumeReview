@@ -16,12 +16,14 @@ def test_vacancy_model_matches_vacancies_table() -> None:
         "id",
         "created_at",
         "content",
+        "filename",
         "is_active",
     }
     assert isinstance(table.c.created_at.type, DateTime)
     assert table.c.created_at.type.timezone is True
     assert table.c.created_at.server_default is not None
     assert isinstance(table.c.content.type, Text)
+    assert isinstance(table.c.filename.type, Text)
     assert isinstance(table.c.is_active.type, Boolean)
     assert table.c.is_active.server_default is not None
 

@@ -54,7 +54,7 @@ def test_save_vacancy_success(client, user, session):
 
     response = client.post(
         "/api/vacancies",
-        json={"content": "Python developer"},
+        json={"content": "Python developer", "filename": "vacancy.txt"},
     )
 
     assert response.status_code == 201
@@ -63,12 +63,13 @@ def test_save_vacancy_success(client, user, session):
     assert session.committed is True
     assert len(session.added) == 1
     assert session.added[0].content == "Python developer"
+    assert session.added[0].filename == "vacancy.txt"
 
 
 def test_save_vacancy_requires_authorization(client):
     response = client.post(
         "/api/vacancies",
-        json={"content": "Python developer"},
+        json={"content": "Python developer", "filename": "vacancy.txt"},
     )
 
     assert response.status_code == 401
@@ -77,7 +78,21 @@ def test_save_vacancy_requires_authorization(client):
 def test_save_vacancy_rejects_blank_content(client, user):
     app.dependency_overrides[current_user_authorization] = lambda: user
 
-    response = client.post("/api/vacancies", json={"content": "   "})
+    response = client.post(
+        "/api/vacancies",
+        json={"content": "   ", "filename": "vacancy.txt"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_save_vacancy_rejects_blank_filename(client, user):
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.post(
+        "/api/vacancies",
+        json={"content": "Python developer", "filename": "   "},
+    )
 
     assert response.status_code == 422
 
@@ -91,7 +106,7 @@ def test_save_vacancy_maps_database_failure(client, user, session, monkeypatch):
 
     response = client.post(
         "/api/vacancies",
-        json={"content": "Python developer"},
+        json={"content": "Python developer", "filename": "vacancy.txt"},
     )
 
     assert response.status_code == 503

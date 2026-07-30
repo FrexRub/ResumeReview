@@ -19,6 +19,7 @@ class Vacancy(Base):
         server_default=func.now(),
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

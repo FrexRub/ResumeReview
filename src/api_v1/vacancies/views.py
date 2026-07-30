@@ -41,7 +41,7 @@ async def create_vacancy(
     session: AsyncSession = Depends(get_async_session),
 ) -> VacancyCreated:
     try:
-        vacancy = await save_vacancy(session, data.content)
+        vacancy = await save_vacancy(session, data.content, data.filename)
     except VacancyStorageUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

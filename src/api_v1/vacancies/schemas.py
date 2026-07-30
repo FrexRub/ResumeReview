@@ -15,12 +15,13 @@ class ParsedVacancy(BaseModel):
 
 class VacancyCreate(BaseModel):
     content: str = Field(min_length=1)
+    filename: str = Field(min_length=1)
 
-    @field_validator("content")
+    @field_validator("content", "filename")
     @classmethod
-    def content_must_not_be_blank(cls, value: str) -> str:
+    def fields_must_not_be_blank(cls, value: str) -> str:
         if not value.strip():
-            raise ValueError("Текст вакансии не должен быть пустым")
+            raise ValueError("Поле не должно быть пустым")
         return value
 
 

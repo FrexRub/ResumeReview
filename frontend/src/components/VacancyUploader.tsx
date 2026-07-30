@@ -70,11 +70,11 @@ export function VacancyUploader() {
   }
 
   async function handleSave() {
-    if (!result?.text.trim() || saving || saved) return;
+    if (!result?.text.trim() || !file || saving || saved) return;
     setSaving(true);
     setSaveError("");
     try {
-      await saveVacancy(result.text);
+      await saveVacancy(result.text, result.filename ?? file.name);
       setSaved(true);
     } catch (reason) {
       setSaveError(

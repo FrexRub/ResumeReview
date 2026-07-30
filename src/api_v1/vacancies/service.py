@@ -21,9 +21,13 @@ async def get_parserdoc_client() -> AsyncGenerator[httpx.AsyncClient, None]:
         yield client
 
 
-async def save_vacancy(session: AsyncSession, content: str) -> Vacancy:
+async def save_vacancy(
+    session: AsyncSession,
+    content: str,
+    filename: str,
+) -> Vacancy:
     try:
-        vacancy = await create_vacancy(session, content)
+        vacancy = await create_vacancy(session, content, filename)
         await session.commit()
         await session.refresh(vacancy)
         return vacancy

@@ -43,7 +43,7 @@ describe("VacancyUploader", () => {
 
   it("saves parsed text for candidate matching", async () => {
     mockedParse.mockResolvedValue({
-      status: "ok", filename: "vacancy.txt", mime_type: "text/plain", source_type: "text",
+      status: "ok", filename: "parserdoc-vacancy.txt", mime_type: "text/plain", source_type: "text",
       characters: 16, text: "Python developer", warnings: [],
     });
     mockedSave.mockResolvedValue({
@@ -63,7 +63,7 @@ describe("VacancyUploader", () => {
       screen.getByRole("button", { name: "Добавить в подбор кандидатов" }),
     );
 
-    expect(mockedSave).toHaveBeenCalledWith("Python developer");
+    expect(mockedSave).toHaveBeenCalledWith("Python developer", "parserdoc-vacancy.txt");
     expect(
       await screen.findByText("Текст вакансии сохранён и готов к подбору кандидатов."),
     ).toBeInTheDocument();

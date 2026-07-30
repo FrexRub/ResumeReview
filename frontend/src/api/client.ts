@@ -118,9 +118,9 @@ export function parseVacancy(file: File): Promise<ParsedVacancy> {
   return request<ParsedVacancy>("/api/vacancies/parse", { method: "POST", body: formData });
 }
 
-export function saveVacancy(content: string): Promise<StoredVacancy> {
+export function saveVacancy(content: string, filename: string): Promise<StoredVacancy> {
   return request<StoredVacancy>("/api/vacancies", {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, filename }),
   });
 }

@@ -99,4 +99,13 @@ npm run build
 - `POST /api/vacancies`
 - `POST /api/vacancies/parse`
 
+`POST /api/vacancies` принимает извлечённый текст и имя файла из ответа ParserDoc:
+
+```json
+{
+  "content": "Python developer",
+  "filename": "vacancy.txt"
+}
+```
+
 Регистрация, восстановление пароля, хранение исходных файлов и сопоставление резюме с вакансией пока не входят в эту версию.
