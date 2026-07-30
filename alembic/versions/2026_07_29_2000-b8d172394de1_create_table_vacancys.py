@@ -33,6 +33,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("content", sa.Text(), nullable=False),
+        sa.Column("filename", sa.Text(), nullable=False),
         sa.Column(
             "is_active",
             sa.Boolean(),
