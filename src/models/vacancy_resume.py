@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Identity, Text, false
+from sqlalchemy import Integer, Boolean, Text, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
@@ -9,7 +9,7 @@ class VacancyResume(Base):
     desired_position: Mapped[str | None] = mapped_column(Text)
     summary_resume: Mapped[str | None] = mapped_column(Text)
     score_label: Mapped[str | None] = mapped_column(Text)
-    candidate_rating: Mapped[str | None] = mapped_column(Text)
+    candidate_rating: Mapped[int] = mapped_column(Integer, nullable=False)
     recommendation: Mapped[str | None] = mapped_column(Text)
     recommendation_reason: Mapped[str | None] = mapped_column(Text)
     executive_summary: Mapped[str | None] = mapped_column(Text)
