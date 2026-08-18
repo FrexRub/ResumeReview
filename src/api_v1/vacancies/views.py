@@ -5,10 +5,17 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api_v1.vacancies.schemas import ParsedVacancy, VacancyCreate, VacancyCreated
+from src.api_v1.vacancies.schemas import (
+    ParsedVacancy,
+    VacancyCreate,
+    VacancyCreated,
+    VacancyResumeRead,
+)
 from src.api_v1.vacancies.service import (
+    VacancyReadUnavailable,
     VacancyStorageUnavailable,
     get_parserdoc_client,
+    get_unviewed_resumes_for_active_vacancy,
     save_vacancy,
 )
 from src.core.config import setting
@@ -32,6 +39,21 @@ SUPPORTED_EXTENSIONS = {
     ".xml",
 }
 CHUNK_SIZE = 1024 * 1024
+
+
+@router.get("/active/resumes", response_model=list[VacancyResumeRead])
+async def read_active_vacancy_unviewed_resumes(
+    _: User = Depends(current_user_authorization),
+    session: AsyncSession = Depends(get_async_session),
+) -> list[VacancyResumeRead]:
+    try:
+        resumes = await get_unviewed_resumes_for_active_vacancy(session)
+    except VacancyReadUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u0440\u0435\u0437\u044e\u043c\u0435 \u0434\u043b\u044f \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0439 \u0432\u0430\u043a\u0430\u043d\u0441\u0438\u0438. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437",
+        ) from exc
+    return [VacancyResumeRead.model_validate(resume) for resume in resumes]
 
 
 @router.post("", response_model=VacancyCreated, status_code=status.HTTP_201_CREATED)
@@ -96,7 +118,13 @@ async def parse_vacancy(
     try:
         parser_response = await client.post(
             "/parse",
-            files={"file": (filename, content, file.content_type or "application/octet-stream")},
+            files={
+                "file": (
+                    filename,
+                    content,
+                    file.content_type or "application/octet-stream",
+                )
+            },
         )
     except httpx.TimeoutException as exc:
         raise HTTPException(
@@ -110,11 +138,17 @@ async def parse_vacancy(
         ) from exc
 
     if parser_response.status_code == status.HTTP_413_CONTENT_TOO_LARGE:
-        raise HTTPException(status_code=413, detail=_parser_error_detail(parser_response))
+        raise HTTPException(
+            status_code=413, detail=_parser_error_detail(parser_response)
+        )
     if parser_response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT:
-        raise HTTPException(status_code=422, detail=_parser_error_detail(parser_response))
+        raise HTTPException(
+            status_code=422, detail=_parser_error_detail(parser_response)
+        )
     if parser_response.is_error:
-        raise HTTPException(status_code=502, detail=_parser_error_detail(parser_response))
+        raise HTTPException(
+            status_code=502, detail=_parser_error_detail(parser_response)
+        )
 
     try:
         return ParsedVacancy.model_validate(parser_response.json())

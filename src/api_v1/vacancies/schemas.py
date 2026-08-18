@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -31,3 +32,20 @@ class VacancyCreated(BaseModel):
     id: int
     created_at: datetime
     is_active: bool
+
+
+class VacancyResumeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title_vacancy: str | None
+    desired_position: str | None
+    summary_resume: str | None
+    score_label: str | None
+    candidate_rating: int | None
+    recommendation: str | None
+    recommendation_reason: str | None
+    executive_summary: str | None
+    short_conclusion: str | None
+    url_resume: str | None
+    viewed: bool

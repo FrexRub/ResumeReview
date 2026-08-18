@@ -1,6 +1,8 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.vacancy import Vacancy
+from src.models.vacancy_resume import VacancyResume
 
 
 async def create_vacancy(
@@ -12,3 +14,26 @@ async def create_vacancy(
     session.add(vacancy)
     await session.flush()
     return vacancy
+
+
+async def get_active_vacancy_filename(session: AsyncSession) -> str | None:
+    result = await session.execute(
+        select(Vacancy.filename)
+        .where(Vacancy.is_active.is_(True))
+        .order_by(Vacancy.created_at.desc(), Vacancy.id.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_unviewed_resumes_by_vacancy_title(
+    session: AsyncSession,
+    title_vacancy: str,
+) -> list[VacancyResume]:
+    result = await session.execute(
+        select(VacancyResume).where(
+            VacancyResume.title_vacancy == title_vacancy,
+            VacancyResume.viewed.is_(False),
+        )
+    )
+    return list(result.scalars().all())

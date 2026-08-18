@@ -1,12 +1,18 @@
+from uuid import uuid4
+
 import httpx
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.api_v1.vacancies.service import get_parserdoc_client
+from src.api_v1.vacancies import views as vacancy_views
+from src.api_v1.vacancies.service import (
+    VacancyReadUnavailable,
+    get_parserdoc_client,
+)
 from src.core.config import setting
 from src.core.depends import current_user_authorization
 from src.main import app
-
+from src.models.vacancy_resume import VacancyResume
 
 PARSED = {
     "status": "ok",
@@ -28,7 +34,9 @@ def parser_client(handler):
 
 def test_parse_vacancy_success(client, user):
     async def client_override():
-        async with parser_client(lambda request: httpx.Response(200, json=PARSED)) as parser:
+        async with parser_client(
+            lambda request: httpx.Response(200, json=PARSED)
+        ) as parser:
             yield parser
 
     app.dependency_overrides[current_user_authorization] = lambda: user
@@ -73,6 +81,93 @@ def test_save_vacancy_requires_authorization(client):
     )
 
     assert response.status_code == 401
+
+
+def test_get_unviewed_resumes_for_active_vacancy(client, user, monkeypatch):
+    resume_id = uuid4()
+    resume = VacancyResume(
+        id=resume_id,
+        title_vacancy="vacancy.txt",
+        desired_position="Python developer",
+        summary_resume="Five years of experience",
+        score_label="high",
+        candidate_rating=91,
+        recommendation="invite",
+        recommendation_reason="Relevant experience",
+        executive_summary="Strong candidate",
+        short_conclusion="Invite",
+        url_resume="https://example.test/resume/1",
+        viewed=False,
+    )
+
+    async def find_resumes(_session):
+        return [resume]
+
+    monkeypatch.setattr(
+        vacancy_views,
+        "get_unviewed_resumes_for_active_vacancy",
+        find_resumes,
+    )
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.get("/api/vacancies/active/resumes")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": str(resume_id),
+            "title_vacancy": "vacancy.txt",
+            "desired_position": "Python developer",
+            "summary_resume": "Five years of experience",
+            "score_label": "high",
+            "candidate_rating": 91,
+            "recommendation": "invite",
+            "recommendation_reason": "Relevant experience",
+            "executive_summary": "Strong candidate",
+            "short_conclusion": "Invite",
+            "url_resume": "https://example.test/resume/1",
+            "viewed": False,
+        }
+    ]
+
+
+def test_get_unviewed_resumes_returns_empty_list(client, user, monkeypatch):
+    async def find_resumes(_session):
+        return []
+
+    monkeypatch.setattr(
+        vacancy_views,
+        "get_unviewed_resumes_for_active_vacancy",
+        find_resumes,
+    )
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.get("/api/vacancies/active/resumes")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_get_unviewed_resumes_requires_authorization(client):
+    response = client.get("/api/vacancies/active/resumes")
+
+    assert response.status_code == 401
+
+
+def test_get_unviewed_resumes_maps_database_failure(client, user, monkeypatch):
+    async def fail_read(_session):
+        raise VacancyReadUnavailable
+
+    monkeypatch.setattr(
+        vacancy_views,
+        "get_unviewed_resumes_for_active_vacancy",
+        fail_read,
+    )
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.get("/api/vacancies/active/resumes")
+
+    assert response.status_code == 503
 
 
 def test_save_vacancy_rejects_blank_content(client, user):
@@ -136,7 +231,9 @@ def test_rejects_format_and_oversized_file(client, user, monkeypatch):
 def test_maps_parser_errors(client, user, parser_status, expected_status):
     async def client_override():
         async with parser_client(
-            lambda request: httpx.Response(parser_status, json={"detail": "parse failed"})
+            lambda request: httpx.Response(
+                parser_status, json={"detail": "parse failed"}
+            )
         ) as parser:
             yield parser
 

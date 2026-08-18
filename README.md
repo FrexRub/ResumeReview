@@ -97,6 +97,7 @@ npm run build
 - `GET /api/users/me`
 - `POST /api/users/me/change-password`
 - `POST /api/vacancies`
+- `GET /api/vacancies/active/resumes`
 - `POST /api/vacancies/parse`
 
 `POST /api/vacancies` принимает извлечённый текст и имя файла из ответа ParserDoc:

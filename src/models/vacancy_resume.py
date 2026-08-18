@@ -5,11 +5,13 @@ from src.models.base import Base
 
 
 class VacancyResume(Base):
+    __tablename__ = "vacancy_resume"
+
     title_vacancy: Mapped[str | None] = mapped_column(Text)
     desired_position: Mapped[str | None] = mapped_column(Text)
     summary_resume: Mapped[str | None] = mapped_column(Text)
     score_label: Mapped[str | None] = mapped_column(Text)
-    candidate_rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    candidate_rating: Mapped[int | None] = mapped_column(Integer)
     recommendation: Mapped[str | None] = mapped_column(Text)
     recommendation_reason: Mapped[str | None] = mapped_column(Text)
     executive_summary: Mapped[str | None] = mapped_column(Text)
