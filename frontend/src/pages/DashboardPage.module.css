@@ -3,9 +3,10 @@
 .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); font-weight: 700; text-decoration: none; }
 .brand > span { display: grid; width: 34px; height: 34px; place-items: center; background: var(--blue); color: white; font-size: 0.67rem; letter-spacing: 0.04em; }
 .account { display: flex; align-items: center; gap: 24px; }
-.account div { display: grid; gap: 2px; text-align: right; }
+.userSummary { display: grid; gap: 2px; text-align: center; }
 .account span { color: var(--muted-light); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
 .account strong { font-size: 0.82rem; }
+.userLine { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .account button { min-height: 40px; padding: 0 15px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); font: 700 0.76rem var(--font-body); cursor: pointer; transition: border-color 180ms ease, color 180ms ease; }
 .account button:hover { border-color: var(--blue); color: var(--blue); }
 .main { max-width: 1440px; margin: 0 auto; padding: clamp(48px, 7vw, 88px) 0 60px; }
@@ -15,7 +16,7 @@
 .intro h1 em { color: var(--blue); font-weight: 500; }
 .intro > p { margin: 0; padding-left: 24px; border-left: 1px solid var(--blue); color: var(--muted); line-height: 1.7; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 360px); gap: 24px; align-items: start; }
-.sidebar { display: grid; gap: 24px; }
+.sidebar { display: block; }
 .progress { padding: 28px; border: 1px solid var(--line-strong); background: rgba(250, 248, 241, 0.7); }
 .progress > p { margin: 0 0 24px; color: var(--muted-light); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
 .progress ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
@@ -28,6 +29,6 @@
 .progress .active { color: var(--ink); }
 .progress .active > span { border-color: var(--blue); background: var(--blue); color: white; }
 .footer { display: flex; justify-content: space-between; max-width: 1440px; margin: 0 auto; padding: 20px 0; border-top: 1px solid var(--line); color: var(--muted-light); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-@media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px) { .intro { grid-template-columns: 1fr; } .intro > p { max-width: 520px; } .sidebar { grid-template-columns: 1fr; } }
-@media (max-width: 480px) { .account div { display: none; } .footer span:last-child { display: none; } }
+@media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .intro { grid-template-columns: 1fr; } .intro > p { max-width: 520px; } }
+@media (max-width: 480px) { .userSummary > span { display: none; } .account { gap: 10px; } .userLine { gap: 7px; } .footer span:last-child { display: none; } }

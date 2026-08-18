@@ -46,19 +46,26 @@ export function PasswordPanel() {
   }
 
   return (
-    <section className={styles.card} aria-labelledby="security-title">
-      <div className={styles.heading}>
-        <div className={styles.icon}><LockIcon /></div>
-        <div><p>Безопасность</p><h2 id="security-title">Пароль доступа</h2></div>
-      </div>
-      <p className={styles.copy}>Обновляйте пароль, если считаете, что его могли узнать посторонние.</p>
+    <div className={styles.wrapper}>
+      <button
+        className={styles.trigger}
+        type="button"
+        aria-expanded={expanded}
+        aria-controls="password-panel"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <LockIcon size={14} />
+        <span>Сменить пароль</span>
+      </button>
 
-      {!expanded ? (
-        <button className={styles.openButton} type="button" onClick={() => setExpanded(true)}>
-          Сменить пароль
-        </button>
-      ) : (
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      {expanded && (
+        <section id="password-panel" className={styles.card} aria-labelledby="security-title">
+          <div className={styles.heading}>
+            <div className={styles.icon}><LockIcon /></div>
+            <div><p>Безопасность</p><h2 id="security-title">Смена пароля</h2></div>
+          </div>
+          <p className={styles.copy}>После сохранения потребуется войти с новым паролем.</p>
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label>Текущий пароль<input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} disabled={submitting} /></label>
           <label>Новый пароль<input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} disabled={submitting} /></label>
           <label>Повторите пароль<input type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} disabled={submitting} /></label>
@@ -69,7 +76,8 @@ export function PasswordPanel() {
             <button type="submit" disabled={submitting}>{submitting ? "Сохраняем…" : "Сохранить"}</button>
           </div>
         </form>
+        </section>
       )}
-    </section>
+    </div>
   );
 }

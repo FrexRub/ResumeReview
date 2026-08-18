@@ -19,7 +19,13 @@ export function DashboardPage() {
       <header className={styles.header}>
         <a className={styles.brand} href="/dashboard"><span>RR</span>ResumeReview</a>
         <div className={styles.account}>
-          <div><span>Пользователь</span><strong>{user?.username}</strong></div>
+          <div className={styles.userSummary}>
+            <span>Пользователь</span>
+            <div className={styles.userLine}>
+              <strong>{user?.username}</strong>
+              <PasswordPanel />
+            </div>
+          </div>
           <button type="button" onClick={handleLogout}>Выйти</button>
         </div>
       </header>
@@ -44,7 +50,6 @@ export function DashboardPage() {
                 <li><span>03</span><div><strong>Сопоставление</strong><small>Следующий этап проекта</small></div></li>
               </ol>
             </section>
-            <PasswordPanel />
           </aside>
         </div>
       </main>
