@@ -1,0 +1,24 @@
+.card { min-width: 0; border: 1px solid var(--line-strong); background: var(--paper-card); }
+.header { display: flex; min-height: 92px; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
+.header p { margin: 0 0 4px; color: var(--blue); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
+.header h2 { margin: 0; font-family: var(--font-display); font-size: 1.75rem; font-weight: 500; line-height: 1; }
+.navigation { display: grid; grid-template-columns: 34px auto 34px; align-items: center; border: 1px solid var(--line-strong); }
+.navigation button { display: grid; width: 34px; height: 34px; place-items: center; border: 0; background: transparent; color: var(--ink); font: 500 1rem var(--font-body); cursor: pointer; transition: background 160ms ease, color 160ms ease; }
+.navigation button:hover:not(:disabled) { background: var(--blue); color: white; }
+.navigation button:disabled { color: var(--muted-light); cursor: default; opacity: 0.35; }
+.navigation span { min-width: 58px; color: var(--muted); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-align: center; }
+.fields { max-height: 560px; margin: 0; overflow-y: auto; scrollbar-color: var(--line-strong) transparent; }
+.field { display: grid; gap: 6px; margin: 0; padding: 17px 24px; border-bottom: 1px solid var(--line); animation: reveal-field 280ms ease both; }
+.field:last-child { border-bottom: 0; }
+.field dt { color: var(--muted-light); font-size: 0.61rem; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; }
+.field dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--ink-soft); font-size: 0.78rem; line-height: 1.55; white-space: pre-wrap; }
+.field a { color: var(--blue); font-weight: 700; text-underline-offset: 3px; }
+.accentField { grid-template-columns: 1fr auto; align-items: center; background: var(--blue-wash); }
+.accentField dd { color: var(--blue); font-family: var(--font-display); font-size: 1.8rem; line-height: 1; }
+.state { margin: 0; padding: 28px 24px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+.state p { margin: 0 0 14px; }
+.state button { min-height: 38px; padding: 0 14px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); font: 700 0.72rem var(--font-body); cursor: pointer; }
+.state button:hover { border-color: var(--blue); color: var(--blue); }
+@keyframes reveal-field { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 480px) { .header { padding: 20px; } .field { padding-right: 20px; padding-left: 20px; } .navigation { grid-template-columns: 32px auto 32px; } .navigation button { width: 32px; height: 32px; } }
+@media (prefers-reduced-motion: reduce) { .field { animation: none; } }

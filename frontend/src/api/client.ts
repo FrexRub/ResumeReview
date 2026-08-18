@@ -1,4 +1,4 @@
-import type { AuthResponse, ParsedVacancy, StoredVacancy } from "../types";
+import type { AuthResponse, ParsedVacancy, StoredVacancy, VacancyResume } from "../types";
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 let accessToken: string | null = null;
@@ -123,4 +123,8 @@ export function saveVacancy(content: string, filename: string): Promise<StoredVa
     method: "POST",
     body: JSON.stringify({ content, filename }),
   });
+}
+
+export function getActiveVacancyResumes(): Promise<VacancyResume[]> {
+  return request<VacancyResume[]>("/api/vacancies/active/resumes");
 }

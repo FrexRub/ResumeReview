@@ -27,3 +27,18 @@ export interface StoredVacancy {
   created_at: string;
   is_active: boolean;
 }
+
+export interface VacancyResume {
+  id: string;
+  title_vacancy: string | null;
+  desired_position: string | null;
+  summary_resume: string | null;
+  score_label: string | null;
+  candidate_rating: number | null;
+  recommendation: string | null;
+  recommendation_reason: string | null;
+  executive_summary: string | null;
+  short_conclusion: string | null;
+  url_resume: string | null;
+  viewed: boolean;
+}

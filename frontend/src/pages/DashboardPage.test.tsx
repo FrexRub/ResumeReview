@@ -6,6 +6,14 @@ import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../auth/AuthContext";
 import { DashboardPage } from "./DashboardPage";
 
+vi.mock("../api/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../api/client")>();
+  return {
+    ...actual,
+    getActiveVacancyResumes: vi.fn().mockResolvedValue([]),
+  };
+});
+
 const auth = {
   user: {
     id: "user-1",

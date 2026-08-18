@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
+import { ResumeResults } from "../components/ResumeResults";
 import { PasswordPanel } from "../components/PasswordPanel";
 import { VacancyUploader } from "../components/VacancyUploader";
 import styles from "./DashboardPage.module.css";
@@ -50,6 +51,7 @@ export function DashboardPage() {
                 <li><span>03</span><div><strong>Сопоставление</strong><small>Следующий этап проекта</small></div></li>
               </ol>
             </section>
+            <ResumeResults />
           </aside>
         </div>
       </main>
