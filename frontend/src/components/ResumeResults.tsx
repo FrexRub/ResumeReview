@@ -1,22 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ApiError, getActiveVacancyResumes } from "../api/client";
+import { ApiError, downloadResume, getActiveVacancyResumes } from "../api/client";
 import type { VacancyResume } from "../types";
 import styles from "./ResumeResults.module.css";
 
 function displayValue(value: string | number | null): string {
   if (value === null || value === "") return "—";
   return String(value);
-}
-
-function safeResumeUrl(value: string | null): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:" ? value : null;
-  } catch {
-    return null;
-  }
 }
 
 interface ResumeFieldProps {
@@ -39,6 +29,8 @@ export function ResumeResults() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
   const loadResumes = useCallback(async () => {
     setLoading(true);
@@ -65,7 +57,27 @@ export function ResumeResults() {
 
   const currentResume = resumes[currentIndex];
   const canNavigate = resumes.length > 1;
-  const resumeUrl = currentResume ? safeResumeUrl(currentResume.url_resume) : null;
+
+  useEffect(() => {
+    setDownloadError("");
+  }, [currentResume?.id]);
+
+  async function handleResumeDownload() {
+    if (!currentResume) return;
+    setDownloading(true);
+    setDownloadError("");
+    try {
+      await downloadResume(currentResume.id);
+    } catch (reason) {
+      setDownloadError(
+        reason instanceof ApiError
+          ? reason.message
+          : "Не удалось получить резюме",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   function showPrevious() {
     setCurrentIndex((index) => (index - 1 + resumes.length) % resumes.length);
@@ -117,17 +129,25 @@ export function ResumeResults() {
           <ResumeField label="Основание рекомендации" value={currentResume.recommendation_reason} />
           <ResumeField label="Резюме для руководителя" value={currentResume.executive_summary} />
           <ResumeField label="Краткий вывод" value={currentResume.short_conclusion} />
-          <div className={styles.field}>
-            <dt>Ссылка на резюме</dt>
-            <dd>
-              {resumeUrl ? (
-                <a href={resumeUrl} target="_blank" rel="noreferrer">Открыть резюме</a>
-              ) : (
-                displayValue(currentResume.url_resume)
-              )}
-            </dd>
-          </div>
         </dl>
+      )}
+
+      {!loading && !error && currentResume && (
+        <div className={styles.downloadArea}>
+          <button
+            className={styles.downloadButton}
+            type="button"
+            onClick={() => void handleResumeDownload()}
+            disabled={!currentResume.url_resume || downloading}
+          >
+            {downloading ? "Получаем резюме…" : "Получение резюме"}
+          </button>
+          {downloadError && (
+            <p className={styles.downloadError} role="alert">
+              {downloadError}
+            </p>
+          )}
+        </div>
       )}
     </section>
   );

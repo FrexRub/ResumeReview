@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getActiveVacancyResumes } from "../api/client";
+import { downloadResume, getActiveVacancyResumes } from "../api/client";
 import type { VacancyResume } from "../types";
 import { ResumeResults } from "./ResumeResults";
 
@@ -10,10 +10,15 @@ vi.mock("../api/client", () => {
   class ApiError extends Error {
     status = 500;
   }
-  return { ApiError, getActiveVacancyResumes: vi.fn() };
+  return {
+    ApiError,
+    downloadResume: vi.fn(),
+    getActiveVacancyResumes: vi.fn(),
+  };
 });
 
 const mockedGetResumes = vi.mocked(getActiveVacancyResumes);
+const mockedDownloadResume = vi.mocked(downloadResume);
 
 const resumes: VacancyResume[] = [
   {
@@ -27,7 +32,7 @@ const resumes: VacancyResume[] = [
     recommendation_reason: "Релевантный опыт",
     executive_summary: "Сильный кандидат",
     short_conclusion: "Подходит",
-    url_resume: "https://example.test/resume/1",
+    url_resume: "disk:/test/resume-1.docx",
     viewed: false,
   },
   {
@@ -48,29 +53,34 @@ const resumes: VacancyResume[] = [
 
 beforeEach(() => {
   mockedGetResumes.mockReset();
+  mockedDownloadResume.mockReset();
+  mockedDownloadResume.mockResolvedValue();
 });
 
 describe("ResumeResults", () => {
-  it("renders fields vertically and switches rows with arrows", async () => {
+  it("renders fields, downloads the current resume and switches rows", async () => {
     mockedGetResumes.mockResolvedValue(resumes);
+    const user = userEvent.setup();
 
     render(<ResumeResults />);
 
     expect(await screen.findByText("Python-разработчик")).toBeInTheDocument();
     expect(screen.getByText("91")).toBeInTheDocument();
     expect(screen.getByText("01 / 02")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Открыть резюме" })).toHaveAttribute(
-      "href",
-      "https://example.test/resume/1",
-    );
+    expect(screen.queryByText("Ссылка на резюме")).not.toBeInTheDocument();
+    expect(screen.queryByText("disk:/test/resume-1.docx")).not.toBeInTheDocument();
     expect(screen.queryByText("Просмотрено")).not.toBeInTheDocument();
     expect(screen.queryByText("ID записи")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Следующее резюме" }));
+    await user.click(screen.getByRole("button", { name: "Получение резюме" }));
+    expect(mockedDownloadResume).toHaveBeenCalledWith("resume-1");
+
+    await user.click(screen.getByRole("button", { name: "Следующее резюме" }));
 
     expect(screen.getByText("Backend-разработчик")).toBeInTheDocument();
     expect(screen.getByText("76")).toBeInTheDocument();
     expect(screen.getByText("02 / 02")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Получение резюме" })).toBeDisabled();
   });
 
   it("shows an empty state", async () => {

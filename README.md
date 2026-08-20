@@ -42,6 +42,14 @@ COOKIE_SECURE=false
 PARSERDOC_URL=https://parserdoc.srubai.ru
 ```
 
+Для скачивания резюме с Яндекс Диска также укажите серверный OAuth-токен:
+
+```env
+YANDEX_DISK_OAUTH_TOKEN=your_oauth_token
+YANDEX_DISK_API_URL=https://cloud-api.yandex.net
+YANDEX_DISK_TIMEOUT_SECONDS=120
+```
+
 В production задайте длинный случайный `SECRET_KEY`, HTTPS-адрес frontend и `COOKIE_SECURE=true`.
 
 3. Примените миграции и запустите API:
@@ -98,6 +106,7 @@ npm run build
 - `POST /api/users/me/change-password`
 - `POST /api/vacancies`
 - `GET /api/vacancies/active/resumes`
+- `GET /api/vacancies/resumes/{resume_id}/download`
 - `POST /api/vacancies/parse`
 
 `POST /api/vacancies` принимает извлечённый текст и имя файла из ответа ParserDoc:
@@ -108,5 +117,7 @@ npm run build
   "filename": "vacancy.txt"
 }
 ```
+
+В `vacancy_resume.url_resume` хранится постоянный путь вида `disk:/test/resume.docx`. При скачивании backend получает свежий временный URL у Яндекс Диска и потоково передаёт файл авторизованному пользователю. OAuth-токен во frontend не передаётся.
 
 Регистрация, восстановление пароля, хранение исходных файлов и сопоставление резюме с вакансией пока не входят в эту версию.

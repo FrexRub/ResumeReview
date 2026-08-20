@@ -24,7 +24,9 @@ class DbSetting(BaseSettings):
     postgres_port: int = 5432
     echo: bool = False
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env", env_file_encoding="utf8", extra="ignore"
+    )
 
     @property
     def url(self) -> str:
@@ -39,7 +41,9 @@ class RedisSettings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env", env_file_encoding="utf8", extra="ignore"
+    )
 
     @property
     def url(self) -> str:
@@ -62,12 +66,21 @@ class Setting(BaseSettings):
     parserdoc_url: str = "https://parserdoc.srubai.ru"
     parserdoc_timeout_seconds: int = 120
     max_upload_bytes: int = 20 * 1024 * 1024
+    yandex_disk_oauth_token: SecretStr = ""
+    yandex_disk_api_url: str = "https://cloud-api.yandex.net"
+    yandex_disk_timeout_seconds: int = 120
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env", env_file_encoding="utf8", extra="ignore"
+    )
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip().rstrip("/") for origin in self.frontend_url.split(",") if origin.strip()]
+        return [
+            origin.strip().rstrip("/")
+            for origin in self.frontend_url.split(",")
+            if origin.strip()
+        ]
 
 
 setting = Setting()

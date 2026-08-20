@@ -2,12 +2,15 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from pydantic import SecretStr
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.api_v1.vacancies import views as vacancy_views
+from src.api_v1.vacancies import service as vacancy_service
 from src.api_v1.vacancies.service import (
     VacancyReadUnavailable,
     get_parserdoc_client,
+    get_yandex_disk_client,
 )
 from src.core.config import setting
 from src.core.depends import current_user_authorization
@@ -29,6 +32,13 @@ def parser_client(handler):
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler),
         base_url="https://parserdoc.example",
+    )
+
+
+def yandex_client(handler):
+    return httpx.AsyncClient(
+        transport=httpx.MockTransport(handler),
+        base_url="https://cloud-api.yandex.net",
     )
 
 
@@ -261,3 +271,115 @@ def test_maps_parser_timeout(client, user):
         files={"file": ("vacancy.txt", b"content", "text/plain")},
     )
     assert response.status_code == 504
+
+
+def test_download_resume_from_yandex_disk(client, user, monkeypatch):
+    resume_id = uuid4()
+    disk_path = "disk:/test/246_Backend Developer_resume.docx"
+    resume = VacancyResume(id=resume_id, url_resume=disk_path, viewed=False)
+    requests: list[httpx.Request] = []
+
+    async def find_resume(_session, requested_id):
+        assert requested_id == resume_id
+        return resume
+
+    def handler(request):
+        requests.append(request)
+        if request.url.host == "cloud-api.yandex.net":
+            assert request.url.params["path"] == disk_path
+            assert request.headers["Authorization"] == "OAuth yandex-test-token"
+            return httpx.Response(
+                200,
+                json={"href": "https://downloader.disk.yandex.ru/disk/resume"},
+            )
+        assert request.url.host == "downloader.disk.yandex.ru"
+        assert "Authorization" not in request.headers
+        return httpx.Response(
+            200,
+            content=b"resume-content",
+            headers={
+                "Content-Type": (
+                    "application/vnd.openxmlformats-officedocument."
+                    "wordprocessingml.document"
+                )
+            },
+        )
+
+    async def client_override():
+        async with yandex_client(handler) as disk_client:
+            yield disk_client
+
+    monkeypatch.setattr(
+        vacancy_service,
+        "get_vacancy_resume_by_id",
+        find_resume,
+    )
+    monkeypatch.setattr(
+        setting,
+        "yandex_disk_oauth_token",
+        SecretStr("yandex-test-token"),
+    )
+    app.dependency_overrides[current_user_authorization] = lambda: user
+    app.dependency_overrides[get_yandex_disk_client] = client_override
+
+    response = client.get(f"/api/vacancies/resumes/{resume_id}/download")
+
+    assert response.status_code == 200
+    assert response.content == b"resume-content"
+    assert len(requests) == 2
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="resume.docx"; '
+        "filename*=UTF-8''246_Backend%20Developer_resume.docx"
+    )
+
+
+def test_download_resume_requires_authorization(client):
+    response = client.get(f"/api/vacancies/resumes/{uuid4()}/download")
+
+    assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("link_response", "expected_status"),
+    [
+        (httpx.Response(404, json={"message": "not found"}), 404),
+        (httpx.Response(200, json={"href": "https://example.test/file"}), 502),
+    ],
+)
+def test_download_resume_maps_yandex_errors(
+    client,
+    user,
+    monkeypatch,
+    link_response,
+    expected_status,
+):
+    resume_id = uuid4()
+    resume = VacancyResume(
+        id=resume_id,
+        url_resume="disk:/test/resume.docx",
+        viewed=False,
+    )
+
+    async def find_resume(_session, _resume_id):
+        return resume
+
+    async def client_override():
+        async with yandex_client(lambda _request: link_response) as disk_client:
+            yield disk_client
+
+    monkeypatch.setattr(
+        vacancy_service,
+        "get_vacancy_resume_by_id",
+        find_resume,
+    )
+    monkeypatch.setattr(
+        setting,
+        "yandex_disk_oauth_token",
+        SecretStr("yandex-test-token"),
+    )
+    app.dependency_overrides[current_user_authorization] = lambda: user
+    app.dependency_overrides[get_yandex_disk_client] = client_override
+
+    response = client.get(f"/api/vacancies/resumes/{resume_id}/download")
+
+    assert response.status_code == expected_status

@@ -128,3 +128,54 @@ export function saveVacancy(content: string, filename: string): Promise<StoredVa
 export function getActiveVacancyResumes(): Promise<VacancyResume[]> {
   return request<VacancyResume[]>("/api/vacancies/active/resumes");
 }
+
+function downloadFilename(response: Response): string {
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (encodedName) {
+    try {
+      return decodeURIComponent(encodedName);
+    } catch {
+      // Fall back to the ASCII filename below.
+    }
+  }
+  return disposition.match(/filename="([^"]+)"/i)?.[1] ?? "resume";
+}
+
+export async function downloadResume(
+  resumeId: string,
+  canRetry = true,
+): Promise<void> {
+  const headers = new Headers();
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+
+  const path = `/api/vacancies/resumes/${encodeURIComponent(resumeId)}/download`;
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers,
+    credentials: "include",
+  });
+
+  if (response.status === 401 && canRetry) {
+    try {
+      await refreshSession();
+      return downloadResume(resumeId, false);
+    } catch {
+      setAccessToken(null);
+      onSessionExpired?.();
+      throw new ApiError("Сессия завершена. Войдите снова.", 401);
+    }
+  }
+  if (!response.ok) {
+    await parseResponse<void>(response);
+    return;
+  }
+
+  const blobUrl = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = downloadFilename(response);
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 0);
+}

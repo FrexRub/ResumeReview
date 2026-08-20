@@ -1,9 +1,12 @@
 from pathlib import Path
+from urllib.parse import quote
+from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import StreamingResponse
 
 from src.api_v1.vacancies.schemas import (
     ParsedVacancy,
@@ -12,11 +15,18 @@ from src.api_v1.vacancies.schemas import (
     VacancyResumeRead,
 )
 from src.api_v1.vacancies.service import (
+    ResumeNotFound,
+    ResumePathInvalid,
     VacancyReadUnavailable,
     VacancyStorageUnavailable,
+    YandexDiskTimeout,
+    YandexDiskUnavailable,
     get_parserdoc_client,
     get_unviewed_resumes_for_active_vacancy,
+    get_yandex_disk_client,
+    open_resume_download,
     save_vacancy,
+    stream_resume_download,
 )
 from src.core.config import setting
 from src.core.database import get_async_session
@@ -51,9 +61,64 @@ async def read_active_vacancy_unviewed_resumes(
     except VacancyReadUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u0440\u0435\u0437\u044e\u043c\u0435 \u0434\u043b\u044f \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0439 \u0432\u0430\u043a\u0430\u043d\u0441\u0438\u0438. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437",
+            detail="Не удалось получить резюме для активной вакансии. Попробуйте ещё раз",
         ) from exc
     return [VacancyResumeRead.model_validate(resume) for resume in resumes]
+
+
+@router.get("/resumes/{resume_id}/download", response_class=StreamingResponse)
+async def download_resume(
+    resume_id: UUID,
+    _: User = Depends(current_user_authorization),
+    session: AsyncSession = Depends(get_async_session),
+    client: httpx.AsyncClient = Depends(get_yandex_disk_client),
+) -> StreamingResponse:
+    try:
+        download = await open_resume_download(session, resume_id, client)
+    except ResumeNotFound as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Резюме или файл на Яндекс Диске не найден",
+        ) from exc
+    except ResumePathInvalid as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Для резюме не указан корректный путь на Яндекс Диске",
+        ) from exc
+    except VacancyReadUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Не удалось получить данные резюме",
+        ) from exc
+    except YandexDiskTimeout as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Яндекс Диск не успел подготовить файл",
+        ) from exc
+    except YandexDiskUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Не удалось скачать резюме с Яндекс Диска",
+        ) from exc
+
+    suffix = Path(download.filename).suffix.lower()
+    safe_suffix = suffix if len(suffix) <= 10 and suffix[1:].isalnum() else ""
+    fallback_filename = f"resume{safe_suffix}"
+    disposition = (
+        f'attachment; filename="{fallback_filename}"; '
+        f"filename*=UTF-8''{quote(download.filename)}"
+    )
+    headers = {"Content-Disposition": disposition}
+    content_length = download.response.headers.get("content-length")
+    if content_length and content_length.isdigit():
+        headers["Content-Length"] = content_length
+    return StreamingResponse(
+        stream_resume_download(download.response),
+        media_type=download.response.headers.get(
+            "content-type", "application/octet-stream"
+        ),
+        headers=headers,
+    )
 
 
 @router.post("", response_model=VacancyCreated, status_code=status.HTTP_201_CREATED)

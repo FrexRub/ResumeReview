@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,3 +39,10 @@ async def get_unviewed_resumes_by_vacancy_title(
         )
     )
     return list(result.scalars().all())
+
+
+async def get_vacancy_resume_by_id(
+    session: AsyncSession,
+    resume_id: UUID,
+) -> VacancyResume | None:
+    return await session.get(VacancyResume, resume_id)
