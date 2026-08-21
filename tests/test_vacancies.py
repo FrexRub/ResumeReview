@@ -303,6 +303,56 @@ def test_get_unviewed_resumes_maps_database_failure(client, user, monkeypatch):
     assert response.status_code == 503
 
 
+def test_mark_resume_viewed(client, user, monkeypatch):
+    resume_id = uuid4()
+
+    async def mark_viewed(_session, requested_id):
+        assert requested_id == resume_id
+        return VacancyResume(id=resume_id, viewed=True)
+
+    monkeypatch.setattr(vacancy_views, "mark_resume_as_viewed", mark_viewed)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.patch(f"/api/vacancies/resumes/{resume_id}/viewed")
+
+    assert response.status_code == 204
+    assert response.content == b""
+
+
+def test_mark_resume_viewed_requires_authorization(client):
+    response = client.patch(f"/api/vacancies/resumes/{uuid4()}/viewed")
+
+    assert response.status_code == 401
+
+
+def test_mark_resume_viewed_returns_not_found(client, user, monkeypatch):
+    async def mark_viewed(_session, _resume_id):
+        raise vacancy_service.ResumeNotFound
+
+    monkeypatch.setattr(vacancy_views, "mark_resume_as_viewed", mark_viewed)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.patch(f"/api/vacancies/resumes/{uuid4()}/viewed")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Резюме не найдено"
+
+
+def test_mark_resume_viewed_maps_database_failure(client, user, monkeypatch):
+    async def mark_viewed(_session, _resume_id):
+        raise vacancy_service.ResumeStorageUnavailable
+
+    monkeypatch.setattr(vacancy_views, "mark_resume_as_viewed", mark_viewed)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.patch(f"/api/vacancies/resumes/{uuid4()}/viewed")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Не удалось отметить резюме изученным. Попробуйте ещё раз"
+    )
+
+
 def test_save_vacancy_rejects_blank_content(client, user):
     app.dependency_overrides[current_user_authorization] = lambda: user
 

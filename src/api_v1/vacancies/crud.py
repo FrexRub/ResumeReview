@@ -65,3 +65,15 @@ async def get_vacancy_resume_by_id(
     resume_id: UUID,
 ) -> VacancyResume | None:
     return await session.get(VacancyResume, resume_id)
+
+
+async def mark_vacancy_resume_viewed(
+    session: AsyncSession,
+    resume_id: UUID,
+) -> VacancyResume | None:
+    resume = await get_vacancy_resume_by_id(session, resume_id)
+    if resume is None:
+        return None
+    resume.viewed = True
+    await session.flush()
+    return resume

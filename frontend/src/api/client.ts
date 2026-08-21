@@ -143,6 +143,13 @@ export function getActiveVacancyResumes(): Promise<VacancyResume[]> {
   return request<VacancyResume[]>("/api/vacancies/active/resumes");
 }
 
+export function markResumeViewed(resumeId: string): Promise<void> {
+  return request<void>(
+    `/api/vacancies/resumes/${encodeURIComponent(resumeId)}/viewed`,
+    { method: "PATCH" },
+  );
+}
+
 function downloadFilename(response: Response): string {
   const disposition = response.headers.get("Content-Disposition") ?? "";
   const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];

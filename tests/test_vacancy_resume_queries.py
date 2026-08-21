@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,9 +10,11 @@ from src.api_v1.vacancies.crud import (
     get_active_vacancy,
     get_active_vacancy_filename,
     get_unviewed_resumes_by_vacancy_title,
+    mark_vacancy_resume_viewed,
 )
 from src.api_v1.vacancies.service import VacancyReadUnavailable
 from src.models.vacancy import Vacancy
+from src.models.vacancy_resume import VacancyResume
 
 
 class ActiveVacancyResult:
@@ -122,6 +125,50 @@ async def test_resume_query_filters_title_and_unviewed() -> None:
     assert resumes == expected
     assert "vacancy_resume.title_vacancy =" in statement
     assert "vacancy_resume.viewed IS false" in statement
+
+
+@pytest.mark.asyncio
+async def test_mark_vacancy_resume_viewed_updates_record() -> None:
+    resume = VacancyResume(id=uuid4(), viewed=False)
+    session = AsyncMock()
+    session.get.return_value = resume
+
+    result = await mark_vacancy_resume_viewed(session, resume.id)
+
+    assert result is resume
+    assert resume.viewed is True
+    session.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_mark_resume_as_viewed_commits_change(monkeypatch) -> None:
+    resume = VacancyResume(id=uuid4(), viewed=True)
+    update = AsyncMock(return_value=resume)
+    monkeypatch.setattr(service, "mark_vacancy_resume_viewed", update)
+    session = AsyncMock()
+
+    result = await service.mark_resume_as_viewed(session, resume.id)
+
+    assert result is resume
+    update.assert_awaited_once_with(session, resume.id)
+    session.commit.assert_awaited_once()
+    session.refresh.assert_awaited_once_with(resume)
+
+
+@pytest.mark.asyncio
+async def test_mark_resume_as_viewed_rolls_back_database_error(monkeypatch) -> None:
+    monkeypatch.setattr(
+        service,
+        "mark_vacancy_resume_viewed",
+        AsyncMock(side_effect=SQLAlchemyError("unavailable")),
+    )
+    session = AsyncMock()
+
+    with pytest.raises(service.ResumeStorageUnavailable):
+        await service.mark_resume_as_viewed(session, uuid4())
+
+    session.rollback.assert_awaited_once()
+    session.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio

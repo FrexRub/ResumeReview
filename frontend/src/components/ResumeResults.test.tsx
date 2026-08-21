@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { downloadResume, getActiveVacancyResumes } from "../api/client";
+import {
+  downloadResume,
+  getActiveVacancyResumes,
+  markResumeViewed,
+} from "../api/client";
 import type { VacancyResume } from "../types";
 import { ResumeResults } from "./ResumeResults";
 
@@ -14,11 +18,13 @@ vi.mock("../api/client", () => {
     ApiError,
     downloadResume: vi.fn(),
     getActiveVacancyResumes: vi.fn(),
+    markResumeViewed: vi.fn(),
   };
 });
 
 const mockedGetResumes = vi.mocked(getActiveVacancyResumes);
 const mockedDownloadResume = vi.mocked(downloadResume);
+const mockedMarkResumeViewed = vi.mocked(markResumeViewed);
 
 const resumes: VacancyResume[] = [
   {
@@ -55,6 +61,8 @@ beforeEach(() => {
   mockedGetResumes.mockReset();
   mockedDownloadResume.mockReset();
   mockedDownloadResume.mockResolvedValue();
+  mockedMarkResumeViewed.mockReset();
+  mockedMarkResumeViewed.mockResolvedValue();
 });
 
 describe("ResumeResults", () => {
@@ -91,5 +99,39 @@ describe("ResumeResults", () => {
     expect(
       await screen.findByText("Для активной вакансии пока нет непросмотренных резюме."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Резюме изучено" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("marks the current resume as viewed and shows the next one", async () => {
+    mockedGetResumes.mockResolvedValue(resumes);
+
+    render(<ResumeResults />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Резюме изучено" }),
+    );
+
+    expect(mockedMarkResumeViewed).toHaveBeenCalledWith("resume-1");
+    expect(screen.getByText("Backend-разработчик")).toBeInTheDocument();
+    expect(screen.getByText("01 / 01")).toBeInTheDocument();
+    expect(screen.queryByText("Python-разработчик")).not.toBeInTheDocument();
+  });
+
+  it("keeps the current resume visible when status update fails", async () => {
+    mockedGetResumes.mockResolvedValue(resumes);
+    mockedMarkResumeViewed.mockRejectedValue(new Error("database unavailable"));
+
+    render(<ResumeResults />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Резюме изучено" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось отметить резюме изученным",
+    );
+    expect(screen.getByText("Python-разработчик")).toBeInTheDocument();
   });
 });

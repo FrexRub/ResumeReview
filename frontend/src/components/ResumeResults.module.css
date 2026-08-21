@@ -24,6 +24,10 @@
 .downloadButton:hover:not(:disabled) { background: transparent; color: var(--blue); transform: translateY(-1px); }
 .downloadButton:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .downloadButton:disabled { cursor: wait; opacity: 0.55; }
+.viewedButton { display: flex; width: 100%; min-height: 46px; margin-top: 10px; align-items: center; justify-content: center; border: 1px solid var(--ink); background: transparent; color: var(--ink); font: 700 0.72rem var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease; }
+.viewedButton:hover:not(:disabled) { border-color: var(--blue); background: var(--blue-wash); color: var(--blue); transform: translateY(-1px); }
+.viewedButton:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.viewedButton:disabled { cursor: wait; opacity: 0.55; }
 .downloadError { margin: 12px 0 0; color: #a23b32; font-size: 0.72rem; line-height: 1.45; }
 @keyframes reveal-field { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 480px) { .header { padding: 20px; } .field { padding-right: 20px; padding-left: 20px; } .navigation { grid-template-columns: 32px auto 32px; } .navigation button { width: 32px; height: 32px; } }

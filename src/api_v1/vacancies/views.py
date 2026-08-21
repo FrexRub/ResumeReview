@@ -19,6 +19,7 @@ from src.api_v1.vacancies.service import (
     ActiveVacancyNotFound,
     ResumeNotFound,
     ResumePathInvalid,
+    ResumeStorageUnavailable,
     VacancyReadUnavailable,
     VacancyStorageUnavailable,
     YandexDiskTimeout,
@@ -28,6 +29,7 @@ from src.api_v1.vacancies.service import (
     get_parserdoc_client,
     get_unviewed_resumes_for_active_vacancy,
     get_yandex_disk_client,
+    mark_resume_as_viewed,
     open_resume_download,
     save_vacancy,
     stream_resume_download,
@@ -160,6 +162,29 @@ async def download_resume(
         ),
         headers=headers,
     )
+
+
+@router.patch(
+    "/resumes/{resume_id}/viewed",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def mark_resume_viewed(
+    resume_id: UUID,
+    _: User = Depends(current_user_authorization),
+    session: AsyncSession = Depends(get_async_session),
+) -> None:
+    try:
+        await mark_resume_as_viewed(session, resume_id)
+    except ResumeNotFound as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Резюме не найдено",
+        ) from exc
+    except ResumeStorageUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Не удалось отметить резюме изученным. Попробуйте ещё раз",
+        ) from exc
 
 
 @router.post("", response_model=VacancyCreated, status_code=status.HTTP_201_CREATED)

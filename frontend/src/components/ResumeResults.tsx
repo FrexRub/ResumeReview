@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ApiError, downloadResume, getActiveVacancyResumes } from "../api/client";
+import {
+  ApiError,
+  downloadResume,
+  getActiveVacancyResumes,
+  markResumeViewed,
+} from "../api/client";
 import type { VacancyResume } from "../types";
 import styles from "./ResumeResults.module.css";
 
@@ -31,6 +36,8 @@ export function ResumeResults() {
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const [markingViewed, setMarkingViewed] = useState(false);
+  const [viewedError, setViewedError] = useState("");
 
   const loadResumes = useCallback(async () => {
     setLoading(true);
@@ -60,6 +67,7 @@ export function ResumeResults() {
 
   useEffect(() => {
     setDownloadError("");
+    setViewedError("");
   }, [currentResume?.id]);
 
   async function handleResumeDownload() {
@@ -76,6 +84,29 @@ export function ResumeResults() {
       );
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function handleMarkViewed() {
+    if (!currentResume) return;
+    setMarkingViewed(true);
+    setViewedError("");
+    try {
+      await markResumeViewed(currentResume.id);
+      setResumes((current) =>
+        current.filter((resume) => resume.id !== currentResume.id),
+      );
+      setCurrentIndex(
+        Math.max(0, Math.min(currentIndex, resumes.length - 2)),
+      );
+    } catch (reason) {
+      setViewedError(
+        reason instanceof ApiError
+          ? reason.message
+          : "Не удалось отметить резюме изученным",
+      );
+    } finally {
+      setMarkingViewed(false);
     }
   }
 
@@ -96,11 +127,11 @@ export function ResumeResults() {
         </div>
         {!loading && !error && resumes.length > 0 && (
           <div className={styles.navigation} aria-label="Переключение резюме">
-            <button type="button" onClick={showPrevious} disabled={!canNavigate} aria-label="Предыдущее резюме">←</button>
+            <button type="button" onClick={showPrevious} disabled={!canNavigate || markingViewed} aria-label="Предыдущее резюме">←</button>
             <span aria-live="polite">
               {String(currentIndex + 1).padStart(2, "0")} / {String(resumes.length).padStart(2, "0")}
             </span>
-            <button type="button" onClick={showNext} disabled={!canNavigate} aria-label="Следующее резюме">→</button>
+            <button type="button" onClick={showNext} disabled={!canNavigate || markingViewed} aria-label="Следующее резюме">→</button>
           </div>
         )}
       </div>
@@ -142,9 +173,22 @@ export function ResumeResults() {
           >
             {downloading ? "Получаем резюме…" : "Получение резюме"}
           </button>
+          <button
+            className={styles.viewedButton}
+            type="button"
+            onClick={() => void handleMarkViewed()}
+            disabled={markingViewed}
+          >
+            {markingViewed ? "Сохраняем…" : "Резюме изучено"}
+          </button>
           {downloadError && (
             <p className={styles.downloadError} role="alert">
               {downloadError}
+            </p>
+          )}
+          {viewedError && (
+            <p className={styles.downloadError} role="alert">
+              {viewedError}
             </p>
           )}
         </div>

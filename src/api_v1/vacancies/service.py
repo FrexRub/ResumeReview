@@ -16,6 +16,7 @@ from src.api_v1.vacancies.crud import (
     get_active_vacancy_filename,
     get_unviewed_resumes_by_vacancy_title,
     get_vacancy_resume_by_id,
+    mark_vacancy_resume_viewed,
 )
 from src.core.config import setting
 from src.models.vacancy import Vacancy
@@ -36,6 +37,10 @@ class ActiveVacancyNotFound(Exception):
 
 class ResumeNotFound(Exception):
     """Raised when the requested resume record or file does not exist."""
+
+
+class ResumeStorageUnavailable(Exception):
+    """Raised when a resume status cannot be persisted."""
 
 
 class ResumePathInvalid(Exception):
@@ -123,6 +128,24 @@ async def deactivate_current_vacancy(session: AsyncSession) -> Vacancy:
     except SQLAlchemyError as exc:
         await session.rollback()
         raise VacancyStorageUnavailable from exc
+
+
+async def mark_resume_as_viewed(
+    session: AsyncSession,
+    resume_id: UUID,
+) -> VacancyResume:
+    try:
+        resume = await mark_vacancy_resume_viewed(session, resume_id)
+        if resume is None:
+            raise ResumeNotFound
+        await session.commit()
+        await session.refresh(resume)
+        return resume
+    except ResumeNotFound:
+        raise
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        raise ResumeStorageUnavailable from exc
 
 
 def _is_yandex_download_url(href: str) -> bool:

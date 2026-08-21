@@ -109,6 +109,7 @@ npm run build
 - `PATCH /api/vacancies/active`
 - `GET /api/vacancies/active/resumes`
 - `GET /api/vacancies/resumes/{resume_id}/download`
+- `PATCH /api/vacancies/resumes/{resume_id}/viewed`
 - `POST /api/vacancies/parse`
 
 `POST /api/vacancies` принимает извлечённый текст и имя файла из ответа ParserDoc:
