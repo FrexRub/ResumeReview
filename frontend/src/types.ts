@@ -28,6 +28,14 @@ export interface StoredVacancy {
   is_active: boolean;
 }
 
+export interface ActiveVacancy {
+  id: number;
+  created_at: string;
+  filename: string;
+  content: string;
+  is_active: boolean;
+}
+
 export interface VacancyResume {
   id: string;
   title_vacancy: string | null;

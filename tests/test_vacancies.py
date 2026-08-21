@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import httpx
@@ -15,6 +16,7 @@ from src.api_v1.vacancies.service import (
 from src.core.config import setting
 from src.core.depends import current_user_authorization
 from src.main import app
+from src.models.vacancy import Vacancy
 from src.models.vacancy_resume import VacancyResume
 
 PARSED = {
@@ -91,6 +93,67 @@ def test_save_vacancy_requires_authorization(client):
     )
 
     assert response.status_code == 401
+
+
+def test_get_active_vacancy(client, user, monkeypatch):
+    vacancy = Vacancy(
+        id=7,
+        created_at=datetime(2026, 8, 20, 10, 0, tzinfo=timezone.utc),
+        content="Backend Developer",
+        filename="backend-developer.txt",
+        is_active=True,
+    )
+
+    async def find_active(_session):
+        return vacancy
+
+    monkeypatch.setattr(vacancy_views, "get_current_active_vacancy", find_active)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.get("/api/vacancies/active")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 7,
+        "created_at": "2026-08-20T10:00:00Z",
+        "filename": "backend-developer.txt",
+        "content": "Backend Developer",
+        "is_active": True,
+    }
+
+
+def test_get_active_vacancy_returns_null(client, user, monkeypatch):
+    async def find_active(_session):
+        return None
+
+    monkeypatch.setattr(vacancy_views, "get_current_active_vacancy", find_active)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.get("/api/vacancies/active")
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_get_active_vacancy_requires_authorization(client):
+    response = client.get("/api/vacancies/active")
+
+    assert response.status_code == 401
+
+
+def test_get_active_vacancy_maps_database_failure(client, user, monkeypatch):
+    async def fail_read(_session):
+        raise VacancyReadUnavailable
+
+    monkeypatch.setattr(vacancy_views, "get_current_active_vacancy", fail_read)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.get("/api/vacancies/active")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Не удалось получить активную вакансию. Попробуйте ещё раз"
+    )
 
 
 def test_get_unviewed_resumes_for_active_vacancy(client, user, monkeypatch):

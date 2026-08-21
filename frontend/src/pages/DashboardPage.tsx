@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
+import { CurrentVacancy } from "../components/CurrentVacancy";
 import { ResumeResults } from "../components/ResumeResults";
 import { PasswordPanel } from "../components/PasswordPanel";
 import { VacancyUploader } from "../components/VacancyUploader";
@@ -9,6 +11,7 @@ import styles from "./DashboardPage.module.css";
 export function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [vacancyRevision, setVacancyRevision] = useState(0);
 
   async function handleLogout() {
     await logout();
@@ -41,7 +44,12 @@ export function DashboardPage() {
         </section>
 
         <div className={styles.workspace}>
-          <VacancyUploader />
+          <div className={styles.mainColumn}>
+            <VacancyUploader
+              onSaved={() => setVacancyRevision((revision) => revision + 1)}
+            />
+            <CurrentVacancy refreshKey={vacancyRevision} />
+          </div>
           <aside className={styles.sidebar}>
             <section className={styles.progress}>
               <p>Маршрут разбора</p>

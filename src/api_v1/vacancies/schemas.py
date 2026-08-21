@@ -34,6 +34,16 @@ class VacancyCreated(BaseModel):
     is_active: bool
 
 
+class ActiveVacancyRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    filename: str
+    content: str
+    is_active: bool
+
+
 class VacancyResumeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

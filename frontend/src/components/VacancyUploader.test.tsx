@@ -51,7 +51,8 @@ describe("VacancyUploader", () => {
       created_at: "2026-07-29T20:00:00+03:00",
       is_active: true,
     });
-    render(<VacancyUploader />);
+    const onSaved = vi.fn();
+    render(<VacancyUploader onSaved={onSaved} />);
     await userEvent.upload(
       screen.getByLabelText("Выбрать файл вакансии"),
       new File(["Python developer"], "vacancy.txt", { type: "text/plain" }),
@@ -64,6 +65,7 @@ describe("VacancyUploader", () => {
     );
 
     expect(mockedSave).toHaveBeenCalledWith("Python developer", "parserdoc-vacancy.txt");
+    expect(onSaved).toHaveBeenCalledOnce();
     expect(
       await screen.findByText("Текст вакансии сохранён и готов к подбору кандидатов."),
     ).toBeInTheDocument();

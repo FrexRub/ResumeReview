@@ -22,7 +22,11 @@ function validateFile(file: File): string | null {
   return null;
 }
 
-export function VacancyUploader() {
+interface VacancyUploaderProps {
+  onSaved?: () => void;
+}
+
+export function VacancyUploader({ onSaved }: VacancyUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ParsedVacancy | null>(null);
@@ -76,6 +80,7 @@ export function VacancyUploader() {
     try {
       await saveVacancy(result.text, result.filename ?? file.name);
       setSaved(true);
+      onSaved?.();
     } catch (reason) {
       setSaveError(
         reason instanceof ApiError

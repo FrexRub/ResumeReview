@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from src.api_v1.vacancies.schemas import (
+    ActiveVacancyRead,
     ParsedVacancy,
     VacancyCreate,
     VacancyCreated,
@@ -21,6 +22,7 @@ from src.api_v1.vacancies.service import (
     VacancyStorageUnavailable,
     YandexDiskTimeout,
     YandexDiskUnavailable,
+    get_current_active_vacancy,
     get_parserdoc_client,
     get_unviewed_resumes_for_active_vacancy,
     get_yandex_disk_client,
@@ -49,6 +51,23 @@ SUPPORTED_EXTENSIONS = {
     ".xml",
 }
 CHUNK_SIZE = 1024 * 1024
+
+
+@router.get("/active", response_model=ActiveVacancyRead | None)
+async def read_active_vacancy(
+    _: User = Depends(current_user_authorization),
+    session: AsyncSession = Depends(get_async_session),
+) -> ActiveVacancyRead | None:
+    try:
+        vacancy = await get_current_active_vacancy(session)
+    except VacancyReadUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Не удалось получить активную вакансию. Попробуйте ещё раз",
+        ) from exc
+    if vacancy is None:
+        return None
+    return ActiveVacancyRead.model_validate(vacancy)
 
 
 @router.get("/active/resumes", response_model=list[VacancyResumeRead])

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api_v1.vacancies.crud import (
     create_vacancy,
+    get_active_vacancy,
     get_active_vacancy_filename,
     get_unviewed_resumes_by_vacancy_title,
     get_vacancy_resume_by_id,
@@ -91,6 +92,15 @@ async def get_unviewed_resumes_for_active_vacancy(
         if filename is None:
             return []
         return await get_unviewed_resumes_by_vacancy_title(session, filename)
+    except SQLAlchemyError as exc:
+        raise VacancyReadUnavailable from exc
+
+
+async def get_current_active_vacancy(
+    session: AsyncSession,
+) -> Vacancy | None:
+    try:
+        return await get_active_vacancy(session)
     except SQLAlchemyError as exc:
         raise VacancyReadUnavailable from exc
 

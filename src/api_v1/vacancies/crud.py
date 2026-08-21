@@ -18,6 +18,16 @@ async def create_vacancy(
     return vacancy
 
 
+async def get_active_vacancy(session: AsyncSession) -> Vacancy | None:
+    result = await session.execute(
+        select(Vacancy)
+        .where(Vacancy.is_active.is_(True))
+        .order_by(Vacancy.created_at.desc(), Vacancy.id.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_active_vacancy_filename(session: AsyncSession) -> str | None:
     result = await session.execute(
         select(Vacancy.filename)

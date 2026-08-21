@@ -5,10 +5,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from src.api_v1.vacancies import service
 from src.api_v1.vacancies.crud import (
+    get_active_vacancy,
     get_active_vacancy_filename,
     get_unviewed_resumes_by_vacancy_title,
 )
 from src.api_v1.vacancies.service import VacancyReadUnavailable
+from src.models.vacancy import Vacancy
 
 
 class ActiveVacancyResult:
@@ -50,6 +52,26 @@ async def test_active_vacancy_query_filters_active_and_prefers_latest() -> None:
 
 
 @pytest.mark.asyncio
+async def test_active_vacancy_query_returns_latest_active_record() -> None:
+    vacancy = Vacancy(
+        id=7,
+        content="Backend Developer",
+        filename="backend-developer.txt",
+        is_active=True,
+    )
+    session = AsyncMock()
+    session.execute.return_value = ActiveVacancyResult(vacancy)
+
+    result = await get_active_vacancy(session)
+
+    statement = str(session.execute.await_args.args[0])
+    assert result is vacancy
+    assert "vacancys.is_active IS true" in statement
+    assert "vacancys.created_at DESC" in statement
+    assert "LIMIT" in statement
+
+
+@pytest.mark.asyncio
 async def test_resume_query_filters_title_and_unviewed() -> None:
     expected = [object()]
     session = AsyncMock()
@@ -78,6 +100,18 @@ async def test_service_returns_empty_when_there_is_no_active_vacancy(
 
     assert await service.get_unviewed_resumes_for_active_vacancy(AsyncMock()) == []
     find_resumes.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_current_active_vacancy_service_maps_database_error(monkeypatch) -> None:
+    monkeypatch.setattr(
+        service,
+        "get_active_vacancy",
+        AsyncMock(side_effect=SQLAlchemyError("unavailable")),
+    )
+
+    with pytest.raises(VacancyReadUnavailable):
+        await service.get_current_active_vacancy(AsyncMock())
 
 
 @pytest.mark.asyncio

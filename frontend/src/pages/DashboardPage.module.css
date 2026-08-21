@@ -16,6 +16,7 @@
 .intro h1 em { color: var(--blue); font-weight: 500; }
 .intro > p { margin: 0; padding-left: 24px; border-left: 1px solid var(--blue); color: var(--muted); line-height: 1.7; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 360px); gap: 24px; align-items: start; }
+.mainColumn { display: grid; min-width: 0; gap: 24px; }
 .sidebar { display: grid; gap: 24px; }
 .progress { padding: 28px; border: 1px solid var(--line-strong); background: rgba(250, 248, 241, 0.7); }
 .progress > p { margin: 0 0 24px; color: var(--muted-light); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
