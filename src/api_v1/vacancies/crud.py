@@ -28,6 +28,15 @@ async def get_active_vacancy(session: AsyncSession) -> Vacancy | None:
     return result.scalar_one_or_none()
 
 
+async def deactivate_active_vacancy(session: AsyncSession) -> Vacancy | None:
+    vacancy = await get_active_vacancy(session)
+    if vacancy is None:
+        return None
+    vacancy.is_active = False
+    await session.flush()
+    return vacancy
+
+
 async def get_active_vacancy_filename(session: AsyncSession) -> str | None:
     result = await session.execute(
         select(Vacancy.filename)

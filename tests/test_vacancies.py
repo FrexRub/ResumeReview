@@ -10,6 +10,7 @@ from src.api_v1.vacancies import views as vacancy_views
 from src.api_v1.vacancies import service as vacancy_service
 from src.api_v1.vacancies.service import (
     VacancyReadUnavailable,
+    VacancyStorageUnavailable,
     get_parserdoc_client,
     get_yandex_disk_client,
 )
@@ -139,6 +140,65 @@ def test_get_active_vacancy_requires_authorization(client):
     response = client.get("/api/vacancies/active")
 
     assert response.status_code == 401
+
+
+def test_deactivate_active_vacancy(client, user, monkeypatch):
+    vacancy = Vacancy(
+        id=7,
+        created_at=datetime(2026, 8, 20, 10, 0, tzinfo=timezone.utc),
+        content="Backend Developer",
+        filename="backend-developer.txt",
+        is_active=False,
+    )
+
+    async def deactivate(_session):
+        return vacancy
+
+    monkeypatch.setattr(vacancy_views, "deactivate_current_vacancy", deactivate)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.patch("/api/vacancies/active")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 7,
+        "created_at": "2026-08-20T10:00:00Z",
+        "is_active": False,
+    }
+
+
+def test_deactivate_active_vacancy_requires_authorization(client):
+    response = client.patch("/api/vacancies/active")
+
+    assert response.status_code == 401
+
+
+def test_deactivate_active_vacancy_returns_not_found(client, user, monkeypatch):
+    async def deactivate(_session):
+        raise vacancy_service.ActiveVacancyNotFound
+
+    monkeypatch.setattr(vacancy_views, "deactivate_current_vacancy", deactivate)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.patch("/api/vacancies/active")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Активная вакансия не найдена"
+
+
+def test_deactivate_active_vacancy_maps_database_failure(client, user, monkeypatch):
+    async def deactivate(_session):
+        raise VacancyStorageUnavailable
+
+    monkeypatch.setattr(vacancy_views, "deactivate_current_vacancy", deactivate)
+    app.dependency_overrides[current_user_authorization] = lambda: user
+
+    response = client.patch("/api/vacancies/active")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Не удалось деактивировать вакансию. Попробуйте ещё раз"
+    )
 
 
 def test_get_active_vacancy_maps_database_failure(client, user, monkeypatch):

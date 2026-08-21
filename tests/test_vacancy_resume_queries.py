@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from src.api_v1.vacancies import service
 from src.api_v1.vacancies.crud import (
+    deactivate_active_vacancy,
     get_active_vacancy,
     get_active_vacancy_filename,
     get_unviewed_resumes_by_vacancy_title,
@@ -69,6 +70,44 @@ async def test_active_vacancy_query_returns_latest_active_record() -> None:
     assert "vacancys.is_active IS true" in statement
     assert "vacancys.created_at DESC" in statement
     assert "LIMIT" in statement
+
+
+@pytest.mark.asyncio
+async def test_deactivate_active_vacancy_updates_current_record() -> None:
+    vacancy = Vacancy(
+        id=7,
+        content="Backend Developer",
+        filename="backend-developer.txt",
+        is_active=True,
+    )
+    session = AsyncMock()
+    session.execute.return_value = ActiveVacancyResult(vacancy)
+
+    result = await deactivate_active_vacancy(session)
+
+    assert result is vacancy
+    assert vacancy.is_active is False
+    session.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_deactivate_current_vacancy_commits_change(monkeypatch) -> None:
+    vacancy = Vacancy(
+        id=7,
+        content="Backend Developer",
+        filename="backend-developer.txt",
+        is_active=False,
+    )
+    deactivate = AsyncMock(return_value=vacancy)
+    monkeypatch.setattr(service, "deactivate_active_vacancy", deactivate)
+    session = AsyncMock()
+
+    result = await service.deactivate_current_vacancy(session)
+
+    assert result is vacancy
+    deactivate.assert_awaited_once_with(session)
+    session.commit.assert_awaited_once()
+    session.refresh.assert_awaited_once_with(vacancy)
 
 
 @pytest.mark.asyncio

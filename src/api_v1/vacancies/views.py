@@ -16,12 +16,14 @@ from src.api_v1.vacancies.schemas import (
     VacancyResumeRead,
 )
 from src.api_v1.vacancies.service import (
+    ActiveVacancyNotFound,
     ResumeNotFound,
     ResumePathInvalid,
     VacancyReadUnavailable,
     VacancyStorageUnavailable,
     YandexDiskTimeout,
     YandexDiskUnavailable,
+    deactivate_current_vacancy,
     get_current_active_vacancy,
     get_parserdoc_client,
     get_unviewed_resumes_for_active_vacancy,
@@ -68,6 +70,26 @@ async def read_active_vacancy(
     if vacancy is None:
         return None
     return ActiveVacancyRead.model_validate(vacancy)
+
+
+@router.patch("/active", response_model=VacancyCreated)
+async def deactivate_active_vacancy(
+    _: User = Depends(current_user_authorization),
+    session: AsyncSession = Depends(get_async_session),
+) -> VacancyCreated:
+    try:
+        vacancy = await deactivate_current_vacancy(session)
+    except ActiveVacancyNotFound as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Активная вакансия не найдена",
+        ) from exc
+    except VacancyStorageUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Не удалось деактивировать вакансию. Попробуйте ещё раз",
+        ) from exc
+    return VacancyCreated.model_validate(vacancy)
 
 
 @router.get("/active/resumes", response_model=list[VacancyResumeRead])

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ApiError, getActiveVacancy } from "../api/client";
+import {
+  ApiError,
+  deactivateActiveVacancy,
+  getActiveVacancy,
+} from "../api/client";
 import type { ActiveVacancy } from "../types";
 import { DocumentIcon } from "./Icons";
 import styles from "./CurrentVacancy.module.css";
@@ -20,11 +24,14 @@ function formatDate(value: string): string {
 export function CurrentVacancy({ refreshKey = 0 }: CurrentVacancyProps) {
   const [vacancy, setVacancy] = useState<ActiveVacancy | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deactivating, setDeactivating] = useState(false);
   const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const loadVacancy = useCallback(async () => {
     setLoading(true);
     setError("");
+    setActionError("");
     try {
       setVacancy(await getActiveVacancy());
     } catch (reason) {
@@ -42,6 +49,23 @@ export function CurrentVacancy({ refreshKey = 0 }: CurrentVacancyProps) {
   useEffect(() => {
     void loadVacancy();
   }, [loadVacancy, refreshKey]);
+
+  async function handleDeactivate() {
+    setDeactivating(true);
+    setActionError("");
+    try {
+      await deactivateActiveVacancy();
+      setVacancy(null);
+    } catch (reason) {
+      setActionError(
+        reason instanceof ApiError
+          ? reason.message
+          : "Не удалось деактивировать вакансию",
+      );
+    } finally {
+      setDeactivating(false);
+    }
+  }
 
   return (
     <section className={styles.card} aria-labelledby="current-vacancy-title">
@@ -89,8 +113,19 @@ export function CurrentVacancy({ refreshKey = 0 }: CurrentVacancyProps) {
               <span>Добавлена</span>
               <strong>{formatDate(vacancy.created_at)}</strong>
             </div>
-            <span className={styles.status}>Активна</span>
+            <button
+              className={styles.status}
+              type="button"
+              onClick={() => void handleDeactivate()}
+              disabled={deactivating}
+              aria-label="Деактивировать текущую вакансию"
+            >
+              {deactivating ? "Отключаем…" : "Активна"}
+            </button>
           </div>
+          {actionError && (
+            <p className={styles.actionError} role="alert">{actionError}</p>
+          )}
           <div className={styles.text} aria-label="Текст текущей вакансии">
             {vacancy.content}
           </div>

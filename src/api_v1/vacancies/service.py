@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api_v1.vacancies.crud import (
     create_vacancy,
+    deactivate_active_vacancy,
     get_active_vacancy,
     get_active_vacancy_filename,
     get_unviewed_resumes_by_vacancy_title,
@@ -27,6 +28,10 @@ class VacancyStorageUnavailable(Exception):
 
 class VacancyReadUnavailable(Exception):
     """Raised when vacancy resumes cannot be read."""
+
+
+class ActiveVacancyNotFound(Exception):
+    """Raised when there is no active vacancy to deactivate."""
 
 
 class ResumeNotFound(Exception):
@@ -103,6 +108,21 @@ async def get_current_active_vacancy(
         return await get_active_vacancy(session)
     except SQLAlchemyError as exc:
         raise VacancyReadUnavailable from exc
+
+
+async def deactivate_current_vacancy(session: AsyncSession) -> Vacancy:
+    try:
+        vacancy = await deactivate_active_vacancy(session)
+        if vacancy is None:
+            raise ActiveVacancyNotFound
+        await session.commit()
+        await session.refresh(vacancy)
+        return vacancy
+    except ActiveVacancyNotFound:
+        raise
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        raise VacancyStorageUnavailable from exc
 
 
 def _is_yandex_download_url(href: str) -> bool:

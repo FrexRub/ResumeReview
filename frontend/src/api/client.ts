@@ -135,6 +135,10 @@ export function getActiveVacancy(): Promise<ActiveVacancy | null> {
   return request<ActiveVacancy | null>("/api/vacancies/active");
 }
 
+export function deactivateActiveVacancy(): Promise<StoredVacancy> {
+  return request<StoredVacancy>("/api/vacancies/active", { method: "PATCH" });
+}
+
 export function getActiveVacancyResumes(): Promise<VacancyResume[]> {
   return request<VacancyResume[]>("/api/vacancies/active/resumes");
 }

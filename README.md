@@ -106,6 +106,7 @@ npm run build
 - `POST /api/users/me/change-password`
 - `POST /api/vacancies`
 - `GET /api/vacancies/active`
+- `PATCH /api/vacancies/active`
 - `GET /api/vacancies/active/resumes`
 - `GET /api/vacancies/resumes/{resume_id}/download`
 - `POST /api/vacancies/parse`

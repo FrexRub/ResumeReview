@@ -96,13 +96,27 @@
   white-space: nowrap;
 }
 .status {
+  min-height: 32px;
   padding: 7px 10px;
   border: 1px solid var(--blue);
+  background: transparent;
   color: var(--blue);
-  font-size: 0.59rem;
-  font-weight: 800;
+  font: 800 0.59rem var(--font-body);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.status:hover:not(:disabled) { background: var(--blue); color: var(--paper-card); }
+.status:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.status:disabled { cursor: wait; opacity: 0.62; }
+.actionError {
+  margin: 0;
+  padding: 12px clamp(24px, 3vw, 38px);
+  border-bottom: 1px solid var(--line);
+  color: #9f2f27;
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 .text {
   max-height: 520px;
